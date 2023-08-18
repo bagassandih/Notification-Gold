@@ -7,10 +7,10 @@ const mongoose = require('mongoose');
 const app = express();
 const port = process.env.PORT;
 
-// app.get('/updateData', async(req, res, next) => {
-//   await utilities.getPriceGold();
-//   res.send('Data Terupdate');
-// });
+app.post('/updatePriceData', async(req, res, next) => {
+  await utilities.getPriceGold();
+  res.send('Data Terupdate');
+});
 
 cron.schedule('30 15 * * *', async () => {
   await utilities.getPriceGold();
