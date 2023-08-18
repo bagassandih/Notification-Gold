@@ -9,6 +9,7 @@ const port = process.env.PORT;
 
 app.post('/updatePriceData', async(req, res, next) => {
   await utilities.getPriceGold();
+  console.log('Data berhasil di update.');
   res.send('Data Terupdate');
 });
 
