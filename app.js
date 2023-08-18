@@ -1,27 +1,24 @@
 const express = require('express');
 const cron = require('node-cron');
 const path = require('path');
+const utilities = require('./utils');
+const mongoose = require('mongoose');
 
 const app = express();
-const port = 3000;
-const utilities = require('./utils');
+const port = process.env.PORT;
 
-app.post('/updatePriceData', async (req, res, next) => {
-  await utilities.getPriceGold();
-  res.sendFile('Data Updated.');
-});
+// app.get('/updateData', async(req, res, next) => {
+//   await utilities.getPriceGold();
+//   res.send('Data Terupdate');
+// });
 
-app.post('/showData', (req, res, next) => {
-  const filePath = path.join(__dirname, './data_price.txt'); // Ganti dengan nama file Anda
-  res.setHeader('Content-Type', 'text/plain'); // Set tipe konten ke text/plain
-  res.sendFile(filePath);
-});
-
-cron.schedule('30 10 * * *', async () => {
+cron.schedule('30 15 * * *', async () => {
   await utilities.getPriceGold();
   console.log('Data berhasil di update.');
 });
 
+utilities.connectDB();
+  
 app.listen(port, () => {
-  console.log(`Server berjalan di http://localhost:${port}`);
+  console.log(`🚀 Server berjalan di port:${port}`);
 });

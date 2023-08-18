@@ -1,17 +1,30 @@
-const fs = require('fs');
 const fetch = require('node-fetch');
 const QuickChart = require('quickchart-js');
 const dotenv = require('dotenv');
+const mongoose = require('mongoose');
+const priceModel = require('./price.model');
 dotenv.config();
 
-const filePath = 'data_price.txt';
+async function connectDB(){
+  const serverUrl = process.env.DB_URL;
+  const database = process.env.DB_NAME;
+  const dbAtlas = process.env.DB_ATLAS;
+
+  try {
+    // await mongoose.connect(`${serverUrl}/${database}`);
+    await mongoose.connect(`${dbAtlas}`);
+    console.log(`🚀 terhubung ke database ${database}: atlas`);
+  } catch (err) {
+    console.log('Gagal terhubung ke database', err);
+  }
+}
 
 async function getPriceGold(){
   const goldPrice = await fetch(process.env.API_METAL_PRICE)
   .then((res) => res.json())
   .then((result) =>  result)
 
-  // dummy data
+  // // dummy data
   // const goldPrice = {
   //   success: true,
   //   base: 'USD',
@@ -19,72 +32,43 @@ async function getPriceGold(){
   //   rates: { EUR: 0.92020859, XAG: 0.04452074, XAU: 0.00059222 }
   // }
 
-  // Setup Object for save to price today
-  let savePriceToday = goldPrice.rates;
+  const todayDate = new Date();
 
-  // Setting time stamp
-  const todayStampDate = new Date();
-  const todayFixDate = todayStampDate.toLocaleDateString('id-ID');
-  
-  // add properties/keys 
-  savePriceToday['DATE'] = todayFixDate;
-  savePriceToday['TIMESTAMP'] = todayStampDate;
+  let savePriceToday = {
+    price: goldPrice.rates,
+    date: todayDate.toLocaleDateString('id-ID'),
+    time_stamp: todayDate
+  };
 
   // get existing data
-  let currentData;
+  let currentPriceData = await priceModel.find().lean().sort({ _id: 1 });
 
-  // for save after merge from current data
-  let setData;
+  if (currentPriceData && currentPriceData.length){
+    let currentPriceDataMonth = new Date(currentPriceData[currentPriceData.length-1].createdAt).getMonth() + 1;
+    let newPriceDataMonth = todayDate.getMonth() + 1;
 
-  // assign current data from database txt
-  try {
-    const data = fs.readFileSync(filePath, 'utf8');
-    currentData = JSON.parse(data);
-  } catch (err) {
-    console.error('Terjadi kesalahan:', err);
-  }
-  
-  // check if last data is different month with today date
-  if (currentData.length){
-    let checkDate = new Date(currentData[currentData.length-1].TIMESTAMP);
-    if (checkDate.getMonth() !== todayStampDate.getMonth()){
+    if (newPriceDataMonth !== currentPriceDataMonth){
       // send email and reset data
-      await notification();
-      currentData = [];
+      let paramDate = new Date(currentPriceData[currentPriceData.length-1].createdAt).toLocaleDateString('id-ID');
+      let index = paramDate.indexOf("/");
+      paramDate = paramDate.slice(index + 1);
+      await notification(paramDate);
     }
   }
-  
-  // set the data to object
-  setData = currentData;
-  setData.push(savePriceToday);
 
-  // set the object to database txt
-  try {
-    const data = JSON.stringify(setData);
-    fs.writeFileSync(filePath, data);
-  } catch (error) {
-    console.error('Terjadi kesalahan:', error);
-  }
-  
-  return goldPrice
+  await priceModel.create(savePriceToday);  
+  return goldPrice;
 }
 
 // notification function
-async function notification(){
-  let currentData;
-  try {
-    const data = fs.readFileSync(filePath, 'utf8');
-    currentData = JSON.parse(data)
-  } catch (err) {
-    console.error('Terjadi kesalahan:', err);
-  }
-
+async function notification(date){
+  let currentPriceData = await priceModel.find({ date: new RegExp(date) }).lean();
   let getLabel = [];
   let getDataGold = [];
 
-  for (const eachData of currentData){
-    getLabel.push(eachData.DATE);
-    getDataGold.push(eachData.XAU);
+  for (const eachData of currentPriceData){
+    getLabel.push(eachData.date);
+    getDataGold.push(eachData.price.XAU);
   }
 
   let Indicate = {
@@ -93,8 +77,8 @@ async function notification(){
     up: 0, 
   };
 
-  let month = currentData[currentData.length-1].TIMESTAMP;
-  month = new Date(month).getMonth();
+  let month = currentPriceData[currentPriceData.length-1].createdAt;
+  month = new Date(month).getMonth() + 1;
 
   // setup for month
   if (month === 1) month = 'Januari';
@@ -175,12 +159,12 @@ async function notification(){
     lastName: 'Arisandi',
   }
 
-  
   // setup send code to emali
   const mailjet = require('node-mailjet').connect(
     process.env.MJ_APIKEY_PUBLIC, 
     process.env.MJ_APIKEY_PRIVATE
     )
+
   const request = mailjet.post('send', { version: 'v3.1' }).request({
     Messages: [
       {
@@ -222,7 +206,8 @@ async function notification(){
 
 module.exports = {
   getPriceGold,
-  notification
+  notification,
+  connectDB
 }
 
 
