@@ -12,7 +12,7 @@ app.use('/', (req, res, next) => {
   res.sendFile(filePath);
 });
 
-cron.schedule('0 7 * * *', async () => {
+cron.schedule('34 10 * * *', async () => {
   await utilities.getPriceGold();
   console.log('Data berhasil di update.');
 });
