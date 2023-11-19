@@ -3,12 +3,10 @@ const Schema = mongoose.Schema;
 
 const price = new Schema(
   {
-    price: {
-      EUR: Number,
-      XAG: Number,
-      XAU: Number,
-    },
-    date: String
+    price: Number,
+    sell: Number,
+    buy: Number,
+    month: String
   },
   { timestamps: true }
 );
