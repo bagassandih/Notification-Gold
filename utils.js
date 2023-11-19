@@ -12,8 +12,8 @@ async function connectDB() {
   const database = process.env.DB_NAME;
   const dbAtlas = process.env.DB_ATLAS;
   try {
-    await mongoose.connect(`${serverUrl}/${database}`);
-    // await mongoose.connect(`${dbAtlas}`);
+    // await mongoose.connect(`${serverUrl}/${database}`);
+    await mongoose.connect(`${dbAtlas}`);
     console.log(`🚀 terhubung ke database ${database}: atlas`);
   } catch (err) {
     console.log('Gagal terhubung ke database', err);
