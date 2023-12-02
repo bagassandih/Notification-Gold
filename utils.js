@@ -34,17 +34,17 @@ async function getPriceGold() {
     buy: data.buy,
     month: todayDate.format('MMMM')
   }
-
-  await PriceModel.create(objToSave);
-
+  
   let lastData = await PriceModel.find({}).sort({ _id: -1 }).lean();
   lastData = lastData[0];
-
+  
   const dateLastData = moment(lastData.CreatedAt);
   if (todayDate.month() + 1 !== dateLastData.month() + 1) {
+    console.log('masuk')
     await sentToTelegram(lastData.month);
   }
-
+  
+  await PriceModel.create(objToSave);
 }
 
 async function generateData() {
